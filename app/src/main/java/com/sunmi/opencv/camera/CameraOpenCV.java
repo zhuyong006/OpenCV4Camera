@@ -8,15 +8,19 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
 
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCamera2View;
 import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
     private org.opencv.android.JavaCamera2View cv_camera = null;
+    private static final String TAG = "OpenCV.Jon";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -25,10 +29,14 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             ActivityCompat.requestPermissions(this,new String[]{
                     Manifest.permission.CAMERA,Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
         }
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         cv_camera = findViewById(R.id.cv_camera);
         cv_camera.setVisibility(SurfaceView.VISIBLE);
         cv_camera.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_ANY);
         cv_camera.enableView();
+        cv_camera.setCvCameraViewListener(this);
     }
 
     @Override
@@ -43,6 +51,7 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        //Log.e(TAG,"onCameraFrame");
         return inputFrame.rgba();
     }
 }
