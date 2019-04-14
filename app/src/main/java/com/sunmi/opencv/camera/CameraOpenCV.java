@@ -15,13 +15,17 @@ import android.view.WindowManager;
 import android.widget.Button;
 
 import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 
 public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 , View.OnClickListener{
     private org.opencv.android.JavaCamera2View cv_camera = null;
     private int current_camera_idx = CameraBridgeViewBase.CAMERA_ID_BACK;
     private Button switch_camera = null;
+    private int operate_cmd = -1;
     private static final String TAG = "OpenCV.Jon";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +44,7 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         cv_camera.setVisibility(SurfaceView.VISIBLE);
         cv_camera.setCameraIndex(current_camera_idx);
         cv_camera.enableView();
+        cv_camera.enableFpsMeter();
         cv_camera.setCvCameraViewListener(this);
     }
 
@@ -58,9 +63,12 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if(item.getItemId() == R.id.inverse) {
-            Log.e(TAG,"inverse");
+            operate_cmd = 0;
         }else if(item.getItemId() == R.id.gause_blue) {
-            Log.e(TAG,"gause_blue");
+            operate_cmd = 1;
+        }
+        else if(item.getItemId() == R.id.edge) {
+            operate_cmd = 2;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -71,17 +79,29 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-//        Mat dst = inputFrame.rgba();
-//        //Log.e(TAG,"orientation : " + this.getRequestedOrientation());
-//
-//        if(current_camera_idx == CameraBridgeViewBase.CAMERA_ID_BACK)
-//            Core.rotate(dst, dst, Core.ROTATE_90_CLOCKWISE);
-//        if(current_camera_idx == CameraBridgeViewBase.CAMERA_ID_FRONT)
-//        {
-//            Core.rotate(dst, dst, Core.ROTATE_90_COUNTERCLOCKWISE);
-//            Core.flip(dst, dst, 1);
-//        }
-        return inputFrame.rgba();
+        Mat dst = inputFrame.rgba();
+        //Log.e(TAG,"orientation : " + this.getRequestedOrientation());
+
+        if(current_camera_idx == CameraBridgeViewBase.CAMERA_ID_BACK)
+            Core.rotate(dst, dst, Core.ROTATE_90_CLOCKWISE);
+        if(current_camera_idx == CameraBridgeViewBase.CAMERA_ID_FRONT)
+        {
+            Core.rotate(dst, dst, Core.ROTATE_90_COUNTERCLOCKWISE);
+            Core.flip(dst, dst, 1);
+        }
+        process_image(dst);
+        return dst;
+    }
+
+    private void process_image(Mat frame) {
+        if(operate_cmd == 0){
+            Core.bitwise_not(frame,frame);
+        }else if(operate_cmd == 1){
+            Imgproc.GaussianBlur(frame,frame,new Size(25,25),0);
+        }else if(operate_cmd == 2){
+            Imgproc.cvtColor(frame,frame,Imgproc.COLOR_BGRA2GRAY);
+            Imgproc.Canny(frame,frame,100,200,3,false);
+        }
     }
 
     @Override

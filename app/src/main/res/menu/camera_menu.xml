@@ -1,13 +1,15 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/inverse"
         android:orderInCategory="100"
-        android:showAsAction="always"
         android:title="@string/inverse"/>
     <item
         android:id="@+id/gause_blue"
         android:orderInCategory="100"
-        android:showAsAction="always"
         android:title="@string/gause_blue" />
-
+    <item
+        android:id="@+id/edge"
+        android:orderInCategory="100"
+        android:title="@string/edge" />
 </menu>

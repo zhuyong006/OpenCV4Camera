@@ -394,6 +394,11 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
             modified = frame.rgba();
         }
 
+        if(mCacheBitmap != null) {
+            mCacheBitmap.recycle();
+            mCacheBitmap = Bitmap.createBitmap(modified.width(), modified.height(), Bitmap.Config.ARGB_8888);
+        }
+
         boolean bmpValid = true;
         if (modified != null) {
             try {
@@ -408,22 +413,24 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
 
         if (bmpValid && mCacheBitmap != null) {
             Canvas canvas = getHolder().lockCanvas();
-
             if (canvas != null) {
-                /*----------------------------修改预览旋转90度问题--------------------------------*/
-                canvas.rotate(90,0,0);
-                float scale= canvas.getWidth() / (float)mCacheBitmap.getHeight();
-                float scale2= canvas.getHeight() / (float)mCacheBitmap.getWidth();
-                if(scale2> scale)
-                {
-                    scale = scale2;
+                canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
+                Log.d(TAG, "mStretch value: " + mScale);
+
+                if (mScale != 0) {
+                    canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
+                            new Rect((int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2),
+                                    (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2),
+                                    (int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2 + mScale*mCacheBitmap.getWidth()),
+                                    (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2 + mScale*mCacheBitmap.getHeight())), null);
+                } else {
+                    canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
+                            new Rect((canvas.getWidth() - mCacheBitmap.getWidth()) / 2,
+                                    (canvas.getHeight() - mCacheBitmap.getHeight()) / 2,
+                                    (canvas.getWidth() - mCacheBitmap.getWidth()) / 2 + mCacheBitmap.getWidth(),
+                                    (canvas.getHeight() - mCacheBitmap.getHeight()) / 2 + mCacheBitmap.getHeight()), null);
                 }
-                if (scale!= 0)
-                {
-                    canvas.scale(scale,scale,0,0);
-                }
-                canvas.drawBitmap(mCacheBitmap, 0, -mCacheBitmap.getHeight(), null);
-                /*----------------------------修改预览旋转90度问题--------------------------------*/
+
                 if (mFpsMeter != null) {
                     mFpsMeter.measure();
                     mFpsMeter.draw(canvas, 20, 30);
