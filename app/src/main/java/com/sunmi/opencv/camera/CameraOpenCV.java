@@ -3,23 +3,16 @@ package com.sunmi.opencv.camera;
 import android.Manifest;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.SurfaceView;
-import android.view.View;
 import android.view.WindowManager;
 
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.JavaCamera2View;
 import org.opencv.core.Mat;
-import org.opencv.imgproc.Imgproc;
 
 public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
-    private org.opencv.android.JavaCamera2View cv_camera = null;
+    private org.opencv.android.JavaCameraView cv_camera = null;
     private static final String TAG = "OpenCV.Jon";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
