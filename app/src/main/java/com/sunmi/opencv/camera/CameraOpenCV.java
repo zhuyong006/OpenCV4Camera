@@ -27,6 +27,11 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
     private Button switch_camera = null;
     private int operate_cmd = -1;
     private static final String TAG = "OpenCV.Jon";
+
+    static{
+        System.loadLibrary("native-lib");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,11 +51,13 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         cv_camera.enableView();
         cv_camera.enableFpsMeter();
         cv_camera.setCvCameraViewListener(this);
+        //Init Face Dectect CascadeClassifier
+        initCascade();
     }
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-
+        Log.e(TAG,"witdh : " + width + "height : " + height);
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -66,9 +73,10 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             operate_cmd = 0;
         }else if(item.getItemId() == R.id.gause_blue) {
             operate_cmd = 1;
-        }
-        else if(item.getItemId() == R.id.edge) {
+        }else if(item.getItemId() == R.id.edge) {
             operate_cmd = 2;
+        }else if(item.getItemId() == R.id.face_detect) {
+            operate_cmd = 3;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -82,6 +90,7 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         Mat dst = inputFrame.rgba();
         //Log.e(TAG,"orientation : " + this.getRequestedOrientation());
 
+        // 90度 翻转
         if(current_camera_idx == CameraBridgeViewBase.CAMERA_ID_BACK)
             Core.rotate(dst, dst, Core.ROTATE_90_CLOCKWISE);
         if(current_camera_idx == CameraBridgeViewBase.CAMERA_ID_FRONT)
@@ -89,6 +98,10 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             Core.rotate(dst, dst, Core.ROTATE_90_COUNTERCLOCKWISE);
             Core.flip(dst, dst, 1);
         }
+
+
+        // Full Screen Preview
+        Imgproc.resize(dst,dst,new Size(cv_camera.getWidth(), cv_camera.getHeight()),0.0D,0.0D,0);
         process_image(dst);
         return dst;
     }
@@ -101,6 +114,8 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         }else if(operate_cmd == 2){
             Imgproc.cvtColor(frame,frame,Imgproc.COLOR_BGRA2GRAY);
             Imgproc.Canny(frame,frame,100,200,3,false);
+        }else if(operate_cmd == 3){
+            faceDetect(frame.getNativeObjAddr());
         }
     }
 
@@ -120,4 +135,7 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
 
         }
     }
+    public native boolean initCascade();
+    public native void faceDetect(long addr);
+
 }

@@ -39,7 +39,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     private CvCameraViewListener2 mListener;
     private boolean mSurfaceExist;
     private final Object mSyncObject = new Object();
-
+    private boolean init_status = false;
     protected int mFrameWidth;
     protected int mFrameHeight;
     protected int mMaxHeight;
@@ -388,15 +388,17 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     protected void deliverAndDrawFrame(CvCameraViewFrame frame) {
         Mat modified;
 
+
         if (mListener != null) {
             modified = mListener.onCameraFrame(frame);
         } else {
             modified = frame.rgba();
         }
 
-        if(mCacheBitmap != null) {
+        if(mCacheBitmap != null && !init_status) {
             mCacheBitmap.recycle();
             mCacheBitmap = Bitmap.createBitmap(modified.width(), modified.height(), Bitmap.Config.ARGB_8888);
+            init_status = true;
         }
 
         boolean bmpValid = true;
