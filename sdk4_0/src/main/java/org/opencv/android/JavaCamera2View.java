@@ -271,17 +271,17 @@ public class JavaCamera2View extends CameraBridgeViewBase {
             int bestWidth = 0, bestHeight = 0;
             float aspect = (float) width / height;
             android.util.Size[] sizes = map.getOutputSizes(ImageReader.class);
-            bestWidth = sizes[0].getWidth();
-            bestHeight = sizes[0].getHeight();
-            for (android.util.Size sz : sizes) {
-                int w = sz.getWidth(), h = sz.getHeight();
-                Log.d(LOGTAG, "trying size: " + w + "x" + h);
-                if (width >= w && height >= h && bestWidth <= w && bestHeight <= h
-                        && Math.abs(aspect - (float) w / h) < 0.2) {
-                    bestWidth = w;
-                    bestHeight = h;
-                }
-            }
+            bestWidth = width;
+            bestHeight = height;
+//            for (android.util.Size sz : sizes) {
+//                int w = sz.getWidth(), h = sz.getHeight();
+//                Log.d(LOGTAG, "trying size: " + w + "x" + h);
+//                if (width >= w && height >= h && bestWidth <= w && bestHeight <= h
+//                        && Math.abs(aspect - (float) w / h) < 0.2) {
+//                    bestWidth = w;
+//                    bestHeight = h;
+//                }
+//            }
             Log.i(LOGTAG, "best size: " + bestWidth + "x" + bestHeight);
             assert(!(bestWidth == 0 || bestHeight == 0));
             if (mPreviewSize.getWidth() == bestWidth && mPreviewSize.getHeight() == bestHeight)
@@ -345,7 +345,7 @@ public class JavaCamera2View extends CameraBridgeViewBase {
                 Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGB_I420, 4); // COLOR_YUV2RGBA_YV12 produces inverted colors
             else if (mPreviewFormat == ImageFormat.YUV_420_888) {
                 assert (mUVFrameData != null);
-                Imgproc.cvtColorTwoPlane(mYuvFrameData, mUVFrameData, mRgba, Imgproc.COLOR_YUV2RGBA_NV21);
+                Imgproc.cvtColorTwoPlane(mYuvFrameData, mUVFrameData, mRgba, Imgproc.COLOR_YUV2BGRA_NV21);
             } else
                 throw new IllegalArgumentException("Preview Format can be NV21 or YV12");
 

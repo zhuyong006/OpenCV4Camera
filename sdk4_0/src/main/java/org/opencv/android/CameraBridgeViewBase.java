@@ -39,7 +39,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     private CvCameraViewListener2 mListener;
     private boolean mSurfaceExist;
     private final Object mSyncObject = new Object();
-    private boolean init_status = false;
+    public static boolean init_status = false;
     protected int mFrameWidth;
     protected int mFrameHeight;
     protected int mMaxHeight;
@@ -357,7 +357,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     private void onEnterStartedState() {
         Log.d(TAG, "call onEnterStartedState");
         /* Connect camera */
-        if (!connectCamera(getWidth(), getHeight())) {
+        if (!connectCamera(640, 480)) {
             AlertDialog ad = new AlertDialog.Builder(getContext()).create();
             ad.setCancelable(false); // This blocks the 'BACK' button
             ad.setMessage("It seems that you device does not support camera (or it is locked). Application will be closed.");
@@ -394,10 +394,9 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
             modified = frame.rgba();
         }
 
-        if(mCacheBitmap!=null && !init_status)
-        {
+        if(mCacheBitmap != null && !init_status) {
             mCacheBitmap.recycle();
-            mCacheBitmap = Bitmap.createBitmap(modified.width(),modified.height(), Bitmap.Config.ARGB_8888);
+            mCacheBitmap = Bitmap.createBitmap(modified.width(), modified.height(), Bitmap.Config.ARGB_8888);
             init_status = true;
         }
 

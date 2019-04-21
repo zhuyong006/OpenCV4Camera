@@ -12,14 +12,18 @@ CascadeClassifier *cascade = nullptr;
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_sunmi_opencv_camera_CameraOpenCV_initCascade(JNIEnv *env, jobject instance){
-    ALOGE("Java_sunmi_opencv_camera_MainActivity_stringFromC");
-    cascade = new CascadeClassifier("/data/haarcascade_eye_tree_eyeglasses.xml");
+Java_com_sunmi_opencv_camera_CameraOpenCV_initCascade(JNIEnv *env, jobject instance,
+                                                      jstring path_){
+    const char *cascadePath = env->GetStringUTFChars(path_,0);
+    ALOGE("cascadePath:%s",cascadePath);
+    cascade = new CascadeClassifier(cascadePath);
     if(!cascade)
     {
         ALOGE("CascadeClassifier Creat Failed\n");
+        env->ReleaseStringUTFChars(path_, cascadePath);
         return false;
     }
+    env->ReleaseStringUTFChars(path_, cascadePath);
     return true;
 }
 
@@ -33,15 +37,17 @@ Java_com_sunmi_opencv_camera_CameraOpenCV_faceDetect(JNIEnv *env, jobject instan
     Mat gray;
     ALOGE("face detect enter E\n");
 
-    cvtColor(obj,gray,COLOR_RGBA2GRAY);
+    cvtColor(obj,gray,COLOR_BGRA2GRAY);
+    equalizeHist(gray,gray);
     std::vector<Rect> rects;
-    cascade->detectMultiScale(gray,rects,1.1,5,0,Size(10,10),Size(300,300));
+    cascade->detectMultiScale(gray,rects,1.3,3,0,Size(10,10),Size(0,0));
     if(rects.empty()) return;
     for(int i=0;i<rects.size();i++)
     {
         ALOGE("found face\n");
         rectangle(obj,rects[i],Scalar(255,0,0),2,8,0);
     }
+//    rectangle(obj,Point(10,10),Point(100,100),Scalar(255,0,0),2,8,0);
     return;
 
 }

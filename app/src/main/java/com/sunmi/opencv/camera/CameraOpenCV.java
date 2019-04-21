@@ -1,6 +1,7 @@
 package com.sunmi.opencv.camera;
 
 import android.Manifest;
+import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -21,13 +22,19 @@ import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 , View.OnClickListener{
     private org.opencv.android.JavaCamera2View cv_camera = null;
-    private int current_camera_idx = CameraBridgeViewBase.CAMERA_ID_BACK;
+    private int current_camera_idx = CameraBridgeViewBase.CAMERA_ID_FRONT;
     private Button switch_camera = null;
     private int operate_cmd = -1;
     private static final String TAG = "OpenCV.Jon";
-
+    //private String cascadeFileName = "haarcascade_eye_tree_eyeglasses.xml";
+    private String cascadeFileName = "lbpcascade_frontalface.xml";
     static{
         System.loadLibrary("native-lib");
     }
@@ -52,9 +59,30 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         cv_camera.enableFpsMeter();
         cv_camera.setCvCameraViewListener(this);
         //Init Face Dectect CascadeClassifier
-        initCascade();
+        try {
+            initCascade(getCascadeDir());
+        }catch (IOException e){
+            e.printStackTrace();
+        }
     }
+    private String getCascadeDir()throws IOException {
+        InputStream input = getResources().openRawResource(R.raw.lbpcascade_frontalface);
+        File cascadeDir = this.getDir("cascade", Context.MODE_PRIVATE);
+        File file = new File(cascadeDir.getAbsoluteFile(), cascadeFileName);
+        Log.e(TAG,cascadeDir.getAbsoluteFile().getAbsolutePath());
+        String dst = file.getAbsolutePath();
+        FileOutputStream output = new FileOutputStream(file);
+        byte[] buff = new byte[1024];
+        int len = 0;
+        while ((len = input.read(buff)) != -1) {
+            Log.e(TAG,"1111");
+            output.write(buff, 0, len);
+        }
 
+        input.close();
+        output.close();
+        return dst;
+    }
     @Override
     public void onCameraViewStarted(int width, int height) {
         Log.e(TAG,"witdh : " + width + "height : " + height);
@@ -95,14 +123,14 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             Core.rotate(dst, dst, Core.ROTATE_90_CLOCKWISE);
         if(current_camera_idx == CameraBridgeViewBase.CAMERA_ID_FRONT)
         {
-            Core.rotate(dst, dst, Core.ROTATE_90_COUNTERCLOCKWISE);
-            Core.flip(dst, dst, 1);
+            Core.rotate(dst, dst, Core.ROTATE_90_CLOCKWISE);
+            Core.flip(dst,dst,0);
         }
 
 
         // Full Screen Preview
-        Imgproc.resize(dst,dst,new Size(cv_camera.getWidth(), cv_camera.getHeight()),0.0D,0.0D,0);
         process_image(dst);
+        Imgproc.resize(dst,dst,new Size(cv_camera.getWidth(), cv_camera.getHeight()),0.0D,0.0D,0);
         return dst;
     }
 
@@ -121,21 +149,23 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public void onClick(View view) {
+
         if(view.getId() == R.id.swich_camera)
         {
+            cv_camera.disableView();
             if(current_camera_idx == CameraBridgeViewBase.CAMERA_ID_BACK){
                 current_camera_idx = CameraBridgeViewBase.CAMERA_ID_FRONT;
             }else{
                 current_camera_idx = CameraBridgeViewBase.CAMERA_ID_BACK;
             }
             //Log.e(TAG,"click");
-            cv_camera.disableView();
             cv_camera.setCameraIndex(current_camera_idx);
+            CameraBridgeViewBase.init_status = false;
             cv_camera.enableView();
 
         }
     }
-    public native boolean initCascade();
+    public native boolean initCascade(String path);
     public native void faceDetect(long addr);
 
 }
