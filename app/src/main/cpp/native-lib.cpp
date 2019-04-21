@@ -35,7 +35,6 @@ Java_com_sunmi_opencv_camera_CameraOpenCV_faceDetect(JNIEnv *env, jobject instan
     //取到Java端的Mat对象
     Mat obj = *(Mat *)addr;
     Mat gray;
-    ALOGE("face detect enter E\n");
 
     cvtColor(obj,gray,COLOR_BGRA2GRAY);
     equalizeHist(gray,gray);
