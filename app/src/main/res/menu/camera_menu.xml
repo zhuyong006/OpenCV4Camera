@@ -20,4 +20,8 @@
         android:id="@+id/face_track"
         android:orderInCategory="100"
         android:title="@string/face_track" />
+    <item
+        android:id="@+id/eye_detect"
+        android:orderInCategory="100"
+        android:title="@string/eye_detect" />
 </menu>

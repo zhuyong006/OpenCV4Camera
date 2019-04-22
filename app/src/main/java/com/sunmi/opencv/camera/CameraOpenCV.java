@@ -20,6 +20,7 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -118,6 +119,8 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             operate_cmd = 3;
         }else if(item.getItemId() == R.id.face_track) {
             operate_cmd = 4;
+        }else if(item.getItemId() == R.id.eye_detect) {
+            operate_cmd = 5;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -149,7 +152,7 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
 
     private void process_image(Mat frame) {
         //如果之前已经启动了，人脸追踪，而目前是做其他处理，则先将人脸追踪关闭
-        if(operate_cmd != 4 && faceTrackerFlag)
+        if((operate_cmd != 4) && (operate_cmd != 5) && faceTrackerFlag)
         {
             tracker.stop();
             faceTrackerFlag = false;
@@ -164,9 +167,31 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             Imgproc.Canny(frame,frame,100,200,3,false);
         }else if(operate_cmd == 3){ //人脸检测
             faceDetect(frame.getNativeObjAddr());
-        }else if(operate_cmd == 4){ //人脸追踪
+        }else if(operate_cmd == 4 || operate_cmd == 5){ //人脸追踪
             faceTrack(frame);
         }
+    }
+
+    private void eyeDetect(Mat frame,Rect rect) {
+            int fWidth = rect.width;
+            int fHeight = rect.height;
+
+            int offy = (int) (fHeight * 0.35f);
+            int offx = (int) (fWidth * 0.15f);
+            int sh = (int) (fHeight * 0.13f);
+            int sw = (int) (fWidth * 0.32f);
+            int gap = (int) (fWidth * 0.025f);
+            Point lp_eye = new Point(rect.x + offx,rect.y + offy);
+            Point lp_end = new Point(lp_eye.x + sw -gap,lp_eye.y+sh);
+
+            int right_offx = (int)(fWidth * 0.095f);
+            int rew = (int) (sw * 0.81f);
+            Point rp_eye = new Point(rect.x + fWidth/2 + right_offx,rect.y + offy);
+            Point rp_end = new Point(rp_eye.x + rew,rp_eye.y + sh);
+
+            Imgproc.rectangle(frame,lp_eye,lp_end,new Scalar(0,0,255),2,8,0);
+            Imgproc.rectangle(frame,rp_eye,rp_end,new Scalar(0,0,255),2,8,0);
+            return;
     }
 
     private void faceTrack(Mat frame) {
@@ -178,11 +203,24 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         Imgproc.cvtColor(frame,gray,Imgproc.COLOR_BGRA2GRAY);
         tracker.detect(gray,mRects);
         List<Rect> rects = mRects.toList();
-        if(rects.size() == 0)return;
+        if(rects.size() == 0)
+        {
+            gray.release();
+            mRects.release();
+            return;
+        }
+
         for(int i=0;i<rects.size();i++)
         {
-            Imgproc.rectangle(frame,rects.get(i),new Scalar(255,0,0),2,8,0);
+            Rect rect = rects.get(i);
+            Imgproc.rectangle(frame,rect,new Scalar(255,0,0),2,8,0);
+            if(operate_cmd == 5) //人眼检测
+                eyeDetect(frame,rect);
         }
+
+        gray.release();
+        mRects.release();
+        return ;
     }
 
     @Override
