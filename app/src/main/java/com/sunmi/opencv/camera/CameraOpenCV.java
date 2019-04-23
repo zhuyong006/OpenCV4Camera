@@ -16,7 +16,6 @@ import android.view.WindowManager;
 import android.widget.Button;
 
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
@@ -177,7 +176,7 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             Imgproc.cvtColor(frame,frame,Imgproc.COLOR_BGRA2GRAY);
             Imgproc.Canny(frame,frame,100,200,3,false);
         }else if(operate_cmd == 3){ //目标检测
-            faceDetect(frame.getNativeObjAddr());
+            objectDetect(frame.getNativeObjAddr(),operate_cmd,true);
         }else if(operate_cmd == 4 || operate_cmd == 5){ //人脸追踪以及人眼检测
             //对于operate_cmd == 4，只是单纯的人脸追踪
             /* 对于operate_cmd == 5，则是在人脸追踪的基础上
@@ -214,14 +213,17 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             int le_width = (int)(lp_end.x-lp_eye.x);
             int le_height = (int)(lp_end.y-lp_eye.y);
             Mat lm_eye = frame.submat(new Rect((int)lp_eye.x,(int) lp_eye.y,le_width,le_height));
-            faceDetect(lm_eye.getNativeObjAddr());
+            //NDK完成人眼检测，如果检测失败则用保存的模板做模板匹配，以追踪人眼
+            objectDetect(lm_eye.getNativeObjAddr(),operate_cmd,true);
 
             int re_width = (int)(rp_end.x-rp_eye.x);
             int re_height = (int)(rp_end.y-rp_eye.y);
             Mat rm_eye = frame.submat(new Rect((int)rp_eye.x,(int) rp_eye.y,re_width,re_height));
-            faceDetect(rm_eye.getNativeObjAddr());
+            //NDK完成人眼检测，如果检测失败则用保存的模板做模板匹配，以追踪人眼
+            objectDetect(rm_eye.getNativeObjAddr(),operate_cmd,false);
 
-            //step 3：模板匹配
+            lm_eye.release();
+            rm_eye.release();
 
             return;
     }
@@ -278,6 +280,6 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         }
     }
     public native boolean initCascade(String path);
-    public native void faceDetect(long addr);
+    public native void objectDetect(long addr, int operate_cmd, boolean left_eye);
 
 }
