@@ -38,10 +38,11 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
     private int current_camera_idx = CameraBridgeViewBase.CAMERA_ID_FRONT;
     private Button switch_camera = null;
     private int operate_cmd = -1;
+    private Scalar eye_color = new Scalar(0,0,255);
     private DetectionBasedTracker tracker = null;
     private static final String TAG = "OpenCV.Jon";
-    //private String cascadeFileName = "haarcascade_eye_tree_eyeglasses.xml";
-    private String cascadeFileName = "lbpcascade_frontalface.xml";
+    private String eyeCascadeFileName = "haarcascade_eye_tree_eyeglasses.xml";
+    private String faceCascadeFileName = "lbpcascade_frontalface.xml";
     private boolean faceTrackerFlag = false;
     static{
         System.loadLibrary("native-lib");
@@ -66,19 +67,28 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         cv_camera.enableView();
         cv_camera.enableFpsMeter();
         cv_camera.setCvCameraViewListener(this);
-        //初始化人脸检测
+        //初始化人眼检测
         String Cascade_path = null;
         try {
-            Cascade_path = getCascadeDir();
+            Cascade_path = getCascadeDir(eyeCascadeFileName);
             initCascade(Cascade_path);
         }catch (IOException e){
             e.printStackTrace();
         }
         //初始化人脸追踪
-        tracker = new DetectionBasedTracker(Cascade_path,5);
+        try {
+            tracker = new DetectionBasedTracker(getCascadeDir(faceCascadeFileName), 5);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
     }
-    private String getCascadeDir()throws IOException {
-        InputStream input = getResources().openRawResource(R.raw.lbpcascade_frontalface);
+    private String getCascadeDir(String cascadeFileName)throws IOException {
+        InputStream input = null;
+        if(cascadeFileName==eyeCascadeFileName)
+            input  = getResources().openRawResource(R.raw.haarcascade_eye_tree_eyeglasses);
+        else if(cascadeFileName==faceCascadeFileName)
+            input  = getResources().openRawResource(R.raw.lbpcascade_frontalface);
+
         File cascadeDir = this.getDir("cascade", Context.MODE_PRIVATE);
         File file = new File(cascadeDir.getAbsoluteFile(), cascadeFileName);
         Log.e(TAG,cascadeDir.getAbsoluteFile().getAbsolutePath());
@@ -115,7 +125,7 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             operate_cmd = 1;
         }else if(item.getItemId() == R.id.edge) {
             operate_cmd = 2;
-        }else if(item.getItemId() == R.id.face_detect) {
+        }else if(item.getItemId() == R.id.obj_detect) {
             operate_cmd = 3;
         }else if(item.getItemId() == R.id.face_track) {
             operate_cmd = 4;
@@ -154,6 +164,7 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         //如果之前已经启动了，人脸追踪，而目前是做其他处理，则先将人脸追踪关闭
         if((operate_cmd != 4) && (operate_cmd != 5) && faceTrackerFlag)
         {
+            Log.e(TAG,"tracker stop");
             tracker.stop();
             faceTrackerFlag = false;
         }
@@ -165,9 +176,15 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
         }else if(operate_cmd == 2){ //边缘检测
             Imgproc.cvtColor(frame,frame,Imgproc.COLOR_BGRA2GRAY);
             Imgproc.Canny(frame,frame,100,200,3,false);
-        }else if(operate_cmd == 3){ //人脸检测
+        }else if(operate_cmd == 3){ //目标检测
             faceDetect(frame.getNativeObjAddr());
-        }else if(operate_cmd == 4 || operate_cmd == 5){ //人脸追踪
+        }else if(operate_cmd == 4 || operate_cmd == 5){ //人脸追踪以及人眼检测
+            //对于operate_cmd == 4，只是单纯的人脸追踪
+            /* 对于operate_cmd == 5，则是在人脸追踪的基础上
+            *   a. 首先在人脸追踪的基础上，先找到人脸
+            *   b. 找到人脸后根据人体的生物特征找到人眼区域
+            *   c. 找到人眼的区域后，将人眼区域的子图交给级联检测器去精准的识别人眼
+            * */
             faceTrack(frame);
         }
     }
@@ -176,6 +193,7 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             int fWidth = rect.width;
             int fHeight = rect.height;
 
+            //step 1 : 找到人眼的大致区域
             int offy = (int) (fHeight * 0.35f);
             int offx = (int) (fWidth * 0.15f);
             int sh = (int) (fHeight * 0.13f);
@@ -189,15 +207,33 @@ public class CameraOpenCV extends AppCompatActivity implements CameraBridgeViewB
             Point rp_eye = new Point(rect.x + fWidth/2 + right_offx,rect.y + offy);
             Point rp_end = new Point(rp_eye.x + rew,rp_eye.y + sh);
 
-            Imgproc.rectangle(frame,lp_eye,lp_end,new Scalar(0,0,255),2,8,0);
-            Imgproc.rectangle(frame,rp_eye,rp_end,new Scalar(0,0,255),2,8,0);
+            Imgproc.rectangle(frame,lp_eye,lp_end,eye_color,2,8,0);
+            Imgproc.rectangle(frame,rp_eye,rp_end,eye_color,2,8,0);
+
+            //step 2： 将人眼(左右眼)的大致区域送给级联检测器去检测，返回结果是人眼的精准区域
+            int le_width = (int)(lp_end.x-lp_eye.x);
+            int le_height = (int)(lp_end.y-lp_eye.y);
+            Mat lm_eye = frame.submat(new Rect((int)lp_eye.x,(int) lp_eye.y,le_width,le_height));
+            faceDetect(lm_eye.getNativeObjAddr());
+
+            int re_width = (int)(rp_end.x-rp_eye.x);
+            int re_height = (int)(rp_end.y-rp_eye.y);
+            Mat rm_eye = frame.submat(new Rect((int)rp_eye.x,(int) rp_eye.y,re_width,re_height));
+            faceDetect(rm_eye.getNativeObjAddr());
+
+            //step 3：模板匹配
+
             return;
     }
 
     private void faceTrack(Mat frame) {
-        if(!faceTrackerFlag)
+        if(!faceTrackerFlag) {
+            Log.e(TAG,"tracker start");
+            tracker.setMinFaceSize(5);
             tracker.start();
-        faceTrackerFlag = true;
+            faceTrackerFlag = true;
+        }
+
         MatOfRect mRects = new MatOfRect();
         Mat gray = new Mat();
         Imgproc.cvtColor(frame,gray,Imgproc.COLOR_BGRA2GRAY);

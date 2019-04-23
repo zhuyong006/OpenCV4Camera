@@ -13,9 +13,9 @@
         android:orderInCategory="100"
         android:title="@string/edge" />
     <item
-        android:id="@+id/face_detect"
+        android:id="@+id/obj_detect"
         android:orderInCategory="100"
-        android:title="@string/face_detect" />
+        android:title="@string/obj_detect" />
     <item
         android:id="@+id/face_track"
         android:orderInCategory="100"

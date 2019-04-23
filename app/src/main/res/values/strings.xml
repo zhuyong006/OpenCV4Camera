@@ -4,7 +4,7 @@
     <string name="inverse">反色</string>
     <string name="gause_blue">高斯滤波</string>
     <string name="edge">边缘</string>
-    <string name="face_detect">人脸检测</string>
+    <string name="obj_detect">对象检测</string>
     <string name="eye_detect">人眼检测</string>
     <string name="face_track">人脸追踪</string>
     <string name="title_activity_main2">Main2Activity</string>
